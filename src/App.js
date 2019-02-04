@@ -1,11 +1,13 @@
 import React, {useEffect, useState} from 'react'
 import personService from './services/persons'
+import './App.css'
 
 const App = () => {
     const [persons, setPersons] = useState([])
     const [newName, setNewName] = useState('')
     const [newNumber, setNewNumber] = useState('')
     const [newFilter, setNewFilter] = useState('')
+    const [successMsg, setSuccessMsg] = useState(null)
     const hook = () => {
         personService.getAll().then(initialPersons => setPersons(initialPersons))
     }
@@ -22,6 +24,10 @@ const App = () => {
                     setNewNumber('')
                 }
                 personService.update(oldPerson.id, newPerson).then(changeOld)
+                setSuccessMsg(`Muutettiin henkilön ${oldPerson.name} numeroa`)
+                setTimeout(() => {
+                    setSuccessMsg(null)
+                }, 5000)
             }
             return
         }
@@ -31,6 +37,10 @@ const App = () => {
             setNewNumber('')
         }
         personService.create(newPerson).then(updateStates)
+        setSuccessMsg(`Lisättiin ${newPerson.name}`)
+        setTimeout(() => {
+            setSuccessMsg(null)
+        }, 5000)
     }
     const handleFilterChange = event => {
         setNewFilter(event.target.value)
@@ -43,9 +53,14 @@ const App = () => {
     }
     const handleDeletePerson = id => event => {
         event.preventDefault()
-        if (window.confirm(`Poistetaanko ${persons.find(person => person.id === id).name}`)) {
+        const oldPerson = persons.find(person => person.id === id)
+        if (window.confirm(`Poistetaanko ${oldPerson.name}`)) {
             const filterDeleted = () => setPersons(persons.filter(person => person.id !== id))
             personService.remove(id).then(filterDeleted)
+            setSuccessMsg(`Poistettiin ${oldPerson.name}`)
+            setTimeout(() => {
+                setSuccessMsg(null)
+            }, 5000)
         }
     }
     const filterByName = ({name}) => name.toLowerCase().includes(newFilter.toLowerCase())
@@ -60,6 +75,7 @@ const App = () => {
     return (
         <div>
             <h2>Puhelinluettelo</h2>
+            <Notification message={successMsg}/>
             <Filter value={newFilter} handler={handleFilterChange}/>
             <h3>Lisää numero</h3>
             <PersonForm
@@ -73,6 +89,13 @@ const App = () => {
             <div>{getFiltered()}</div>
         </div>
     )
+}
+
+const Notification = ({message}) => {
+    if (message) {
+        return <div className="success"> {message}</div>
+    }
+    return null
 }
 
 const Person = ({person, handleDeletePerson}) => (
