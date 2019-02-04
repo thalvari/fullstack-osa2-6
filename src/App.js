@@ -12,11 +12,19 @@ const App = () => {
     useEffect(hook, [])
     const handleAddPerson = event => {
         event.preventDefault()
-        if (persons.find(person => person.name === newName)) {
-            window.alert(`${newName} on jo luettelossa`)
+        const oldPerson = persons.find(person => person.name === newName)
+        const newPerson = {name: newName, number: newNumber}
+        if (oldPerson) {
+            if (window.confirm(`${newName} on jo luettelossa, korvataanko vanha numero uudella?`)) {
+                const changeOld = updatedPerson => {
+                    setPersons(persons.map(person => person.id !== oldPerson.id ? person : updatedPerson))
+                    setNewName('')
+                    setNewNumber('')
+                }
+                personService.update(oldPerson.id, newPerson).then(changeOld)
+            }
             return
         }
-        const newPerson = {name: newName, number: newNumber}
         const updateStates = person => {
             setPersons(persons.concat(person))
             setNewName('')
@@ -53,7 +61,7 @@ const App = () => {
         <div>
             <h2>Puhelinluettelo</h2>
             <Filter value={newFilter} handler={handleFilterChange}/>
-            <h3>Lisää uusi</h3>
+            <h3>Lisää numero</h3>
             <PersonForm
                 submitHandler={handleAddPerson}
                 newName={newName}
