@@ -8,6 +8,7 @@ const App = () => {
     const [newNumber, setNewNumber] = useState('')
     const [newFilter, setNewFilter] = useState('')
     const [successMsg, setSuccessMsg] = useState(null)
+    const [errorMsg, setErrorMsg] = useState(null)
     const hook = () => {
         personService.getAll().then(initialPersons => setPersons(initialPersons))
     }
@@ -22,12 +23,21 @@ const App = () => {
                     setPersons(persons.map(person => person.id !== oldPerson.id ? person : updatedPerson))
                     setNewName('')
                     setNewNumber('')
+                    setSuccessMsg(`Muutettiin henkilön ${oldPerson.name} numeroa`)
+                    setTimeout(() => {
+                        setSuccessMsg(null)
+                    }, 5000)
                 }
-                personService.update(oldPerson.id, newPerson).then(changeOld)
-                setSuccessMsg(`Muutettiin henkilön ${oldPerson.name} numeroa`)
-                setTimeout(() => {
-                    setSuccessMsg(null)
-                }, 5000)
+                personService
+                    .update(oldPerson.id, newPerson)
+                    .then(changeOld)
+                    .catch(() => {
+                        setErrorMsg(`Henkilö ${oldPerson.name} oli jo poistettu`)
+                        setTimeout(() => {
+                            setErrorMsg(null)
+                        }, 5000)
+                        setPersons(persons.filter(person => person.id !== oldPerson.id))
+                    })
             }
             return
         }
@@ -75,7 +85,8 @@ const App = () => {
     return (
         <div>
             <h2>Puhelinluettelo</h2>
-            <Notification message={successMsg}/>
+            <SuccessNotification message={successMsg}/>
+            <ErrorNotification message={errorMsg}/>
             <Filter value={newFilter} handler={handleFilterChange}/>
             <h3>Lisää numero</h3>
             <PersonForm
@@ -91,9 +102,16 @@ const App = () => {
     )
 }
 
-const Notification = ({message}) => {
+const SuccessNotification = ({message}) => {
     if (message) {
-        return <div className="success"> {message}</div>
+        return <div className='success'> {message}</div>
+    }
+    return null
+}
+
+const ErrorNotification = ({message}) => {
+    if (message) {
+        return <div className='error'> {message}</div>
     }
     return null
 }
