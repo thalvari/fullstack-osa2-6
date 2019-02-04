@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react'
-import axios from "axios";
+import personService from './services/persons'
 
 const App = () => {
     const [persons, setPersons] = useState([])
@@ -7,21 +7,22 @@ const App = () => {
     const [newNumber, setNewNumber] = useState('')
     const [newFilter, setNewFilter] = useState('')
     const hook = () => {
-        const eventHandler = response => {
-            setPersons(response.data)
-        }
-        axios.get('http://localhost:3001/persons').then(eventHandler)
+        personService.getAll().then(initialPersons => setPersons(initialPersons))
     }
     useEffect(hook, [])
-    const addPerson = event => {
+    const handleAddPerson = event => {
         event.preventDefault()
-        if (persons.map(person => person.name).includes(newName)) {
+        if (persons.find(person => person.name === newName)) {
             window.alert(`${newName} on jo luettelossa`)
             return
         }
-        setPersons(persons.concat({name: newName, number: newNumber}))
-        setNewName('')
-        setNewNumber('')
+        const newPerson = {name: newName, number: newNumber}
+        const updateStates = person => {
+            setPersons(persons.concat(person))
+            setNewName('')
+            setNewNumber('')
+        }
+        personService.create(newPerson).then(updateStates)
     }
     const handleFilterChange = event => {
         setNewFilter(event.target.value)
@@ -32,27 +33,46 @@ const App = () => {
     const handleNumberChange = event => {
         setNewNumber(event.target.value)
     }
-    const rows = () => persons.filter(filterByName).map(person => <Person key={person.name} person={person}/>)
+    const handleDeletePerson = id => event => {
+        event.preventDefault()
+        if (window.confirm(`Poistetaanko ${persons.find(person => person.id === id).name}`)) {
+            const filterDeleted = () => setPersons(persons.filter(person => person.id !== id))
+            personService.remove(id).then(filterDeleted)
+        }
+    }
     const filterByName = ({name}) => name.toLowerCase().includes(newFilter.toLowerCase())
+    const getFiltered = () => persons.filter(filterByName).map(person => (
+            <Person
+                key={person.id}
+                person={person}
+                handleDeletePerson={handleDeletePerson(person.id)}
+            />
+        )
+    )
     return (
         <div>
             <h2>Puhelinluettelo</h2>
             <Filter value={newFilter} handler={handleFilterChange}/>
             <h3>Lisää uusi</h3>
             <PersonForm
-                submitHandler={addPerson}
+                submitHandler={handleAddPerson}
                 newName={newName}
                 newNameHandler={handleNameChange}
                 newNumber={newNumber}
                 newNumberHandler={handleNumberChange}
             />
             <h3>Numerot</h3>
-            {rows()}
+            <div>{getFiltered()}</div>
         </div>
     )
 }
 
-const Person = ({person}) => <div>{person.name} {person.number}</div>
+const Person = ({person, handleDeletePerson}) => (
+    <form onSubmit={handleDeletePerson}>
+        <label>{person.name} {person.number} </label>
+        <button type="submit">poista</button>
+    </form>
+)
 
 const Filter = ({value, handler}) => (
     <form>
