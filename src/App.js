@@ -1,10 +1,18 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
+import axios from "axios";
 
-const App = ({init}) => {
-    const [persons, setPersons] = useState(init)
+const App = () => {
+    const [persons, setPersons] = useState([])
     const [newName, setNewName] = useState('')
     const [newNumber, setNewNumber] = useState('')
     const [newFilter, setNewFilter] = useState('')
+    const hook = () => {
+        const eventHandler = response => {
+            setPersons(response.data)
+        }
+        axios.get('http://localhost:3001/persons').then(eventHandler)
+    }
+    useEffect(hook, [])
     const addPerson = event => {
         event.preventDefault()
         if (persons.map(person => person.name).includes(newName)) {
@@ -15,9 +23,15 @@ const App = ({init}) => {
         setNewName('')
         setNewNumber('')
     }
-    const handleFilterChange = event => {setNewFilter(event.target.value)}
-    const handleNameChange = event => {setNewName(event.target.value)}
-    const handleNumberChange = event => {setNewNumber(event.target.value)}
+    const handleFilterChange = event => {
+        setNewFilter(event.target.value)
+    }
+    const handleNameChange = event => {
+        setNewName(event.target.value)
+    }
+    const handleNumberChange = event => {
+        setNewNumber(event.target.value)
+    }
     const rows = () => persons.filter(filterByName).map(person => <Person key={person.name} person={person}/>)
     const filterByName = ({name}) => name.toLowerCase().includes(newFilter.toLowerCase())
     return (
